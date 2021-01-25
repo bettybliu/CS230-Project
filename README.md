@@ -7,12 +7,19 @@ We will frame this project as a binary classification problem (1: active disease
 The results from this project would provide a novel quantitative tool to inform clinical diagnostics of SLE and facilitate the movement towards personalized medicine for SLE patients in the long run.
 
 **References**
-[1]	F. Ceccarelli et al., “Prediction of chronic damage in systemic lupus erythematosus by using machine-learning models,” PLoS One, vol. 12, no. 3, pp. 1–13, 2017, doi: 10.1371/journal.pone.0174200.
-[2]	K. G. Skocelas, “Systemic Lupus Erythematosus Symptom Severity Prediction Using a Recursive Neural Network,” Grand Valley State University, 2018.
-[3]	B. Norgeot et al., “Assessment of a Deep Learning Model Based on Electronic Health Record Data to Forecast Clinical Outcomes in Patients With Rheumatoid Arthritis,” JAMA Netw. open, vol. 2, no. 3, p. e190606, 2019, doi: 10.1001/jamanetworkopen.2019.0606.
-[4]	B. Kegerreis et al., “Machine learning approaches to predict lupus disease activity from gene expression data,” Sci. Rep., vol. 9, no. 1, pp. 1–12, 2019, doi: 10.1038/s41598-019-45989-0.
-[5]	M. Subramaniam, “Implementing and Applying Multiplexed Single Cell RNA-sequencing to Reveal Context- specific Effects in Systemic Lupus Erythematosus,” 2019.
-[6]	D. Nehar-Belaid et al., “Mapping systemic lupus erythematosus heterogeneity at the single-cell level,” Nat. Immunol., vol. 21, no. 9, pp. 1094–1106, 2020, doi: 10.1038/s41590-020-0743-0.
-[7]	R. R. Goel et al., “Interferon lambda promotes immune dysregulation and tissue inflammation in TLR7-induced lupus,” Proc. Natl. Acad. Sci. U. S. A., vol. 117, no. 10, pp. 5409–5419, 2020, doi: 10.1073/pnas.1916897117.
-[8]	H. M. Kang et al., “Multiplexed droplet single-cell RNA-sequencing using natural genetic variation,” Nat. Biotechnol., vol. 36, no. 1, pp. 89–94, 2018, doi: 10.1038/nbt.4042.
 
+[1]	F. Ceccarelli et al., “Prediction of chronic damage in systemic lupus erythematosus by using machine-learning models,” PLoS One, vol. 12, no. 3, pp. 1–13, 2017, doi: 10.1371/journal.pone.0174200.
+
+[2]	K. G. Skocelas, “Systemic Lupus Erythematosus Symptom Severity Prediction Using a Recursive Neural Network,” Grand Valley State University, 2018.
+
+[3]	B. Norgeot et al., “Assessment of a Deep Learning Model Based on Electronic Health Record Data to Forecast Clinical Outcomes in Patients With Rheumatoid Arthritis,” JAMA Netw. open, vol. 2, no. 3, p. e190606, 2019, doi: 10.1001/jamanetworkopen.2019.0606.
+
+[4]	B. Kegerreis et al., “Machine learning approaches to predict lupus disease activity from gene expression data,” Sci. Rep., vol. 9, no. 1, pp. 1–12, 2019, doi: 10.1038/s41598-019-45989-0.
+
+[5]	M. Subramaniam, “Implementing and Applying Multiplexed Single Cell RNA-sequencing to Reveal Context- specific Effects in Systemic Lupus Erythematosus,” 2019.
+
+[6]	D. Nehar-Belaid et al., “Mapping systemic lupus erythematosus heterogeneity at the single-cell level,” Nat. Immunol., vol. 21, no. 9, pp. 1094–1106, 2020, doi: 10.1038/s41590-020-0743-0.
+
+[7]	R. R. Goel et al., “Interferon lambda promotes immune dysregulation and tissue inflammation in TLR7-induced lupus,” Proc. Natl. Acad. Sci. U. S. A., vol. 117, no. 10, pp. 5409–5419, 2020, doi: 10.1073/pnas.1916897117.
+
+[8]	H. M. Kang et al., “Multiplexed droplet single-cell RNA-sequencing using natural genetic variation,” Nat. Biotechnol., vol. 36, no. 1, pp. 89–94, 2018, doi: 10.1038/nbt.4042.
