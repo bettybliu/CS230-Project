@@ -1,1 +1,18 @@
-# CS230-Project
+## Predicting Lupus Disease Activity from Single-Cell RNA Sequencing Data
+
+Systemic Lupus Erythematosus, commonly known as SLE or Lupus, is a complex autoimmune disease that affects multiple organs of the body. Diagnosis of SLE is usually based on clinical observations and laboratory blood tests measuring autoantibody profiles. In addition, among patients with SLE, their disease activity is often evaluated based on clinical questionnaires, but there is no quantitative and definitive tool to evaluate whether a SLE patient has active or inactive disease. This renders difficulties in personalizing treatments for each patient. Many studies have exploited machine learning tools to help understand and predict disease phenotypes[1][2][3]. Kegerreis et al recently described a method using machine learning on large-scale RNA microarray expression data to predict lupus disease activity and achieved 70% accuracy [4]. Nevertheless, as more cutting-edge experimental techniques such as single-cell RNA (scRNA) sequencing has been gaining popularity, it is expected that scRNA expression data provides more insight into SLE disease pathogenesis and greater accuracy in describing disease phenotypes. This project aims to use scRNA expression data to predict a SLE patient's disease activity status.
+
+We will frame this project as a binary classification problem (1: active disease, 0: inactive) and use a deep learning model to perform the task. To achieve this, we plan to use a multi-layer perceptron which takes a gene count matrix as input and outputs the predicted labels. The model will be implemented using PyTorch. We will compare our method against several baseline ML models that do not exploit deep learning, such as those used in Kegerreis et al (KNN, Random Forest). It is expected that the deep learning model will outperform the accuracies achieved in Kegerreis et al. Additionally, we will use other metrics such as AUC of ROC to evaluate our model. Several scRNA datasets are publicly available online for download (GSE137029, GSE135779, GSE142637, GSE96583), totaling more than 160 SLE patient samples [5][6][7][8].
+
+The results from this project would provide a novel quantitative tool to inform clinical diagnostics of SLE and facilitate the movement towards personalized medicine for SLE patients in the long run.
+
+**References**
+[1]	F. Ceccarelli et al., “Prediction of chronic damage in systemic lupus erythematosus by using machine-learning models,” PLoS One, vol. 12, no. 3, pp. 1–13, 2017, doi: 10.1371/journal.pone.0174200.
+[2]	K. G. Skocelas, “Systemic Lupus Erythematosus Symptom Severity Prediction Using a Recursive Neural Network,” Grand Valley State University, 2018.
+[3]	B. Norgeot et al., “Assessment of a Deep Learning Model Based on Electronic Health Record Data to Forecast Clinical Outcomes in Patients With Rheumatoid Arthritis,” JAMA Netw. open, vol. 2, no. 3, p. e190606, 2019, doi: 10.1001/jamanetworkopen.2019.0606.
+[4]	B. Kegerreis et al., “Machine learning approaches to predict lupus disease activity from gene expression data,” Sci. Rep., vol. 9, no. 1, pp. 1–12, 2019, doi: 10.1038/s41598-019-45989-0.
+[5]	M. Subramaniam, “Implementing and Applying Multiplexed Single Cell RNA-sequencing to Reveal Context- specific Effects in Systemic Lupus Erythematosus,” 2019.
+[6]	D. Nehar-Belaid et al., “Mapping systemic lupus erythematosus heterogeneity at the single-cell level,” Nat. Immunol., vol. 21, no. 9, pp. 1094–1106, 2020, doi: 10.1038/s41590-020-0743-0.
+[7]	R. R. Goel et al., “Interferon lambda promotes immune dysregulation and tissue inflammation in TLR7-induced lupus,” Proc. Natl. Acad. Sci. U. S. A., vol. 117, no. 10, pp. 5409–5419, 2020, doi: 10.1073/pnas.1916897117.
+[8]	H. M. Kang et al., “Multiplexed droplet single-cell RNA-sequencing using natural genetic variation,” Nat. Biotechnol., vol. 36, no. 1, pp. 89–94, 2018, doi: 10.1038/nbt.4042.
+
