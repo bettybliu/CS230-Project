@@ -3,12 +3,12 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-from models.pvcnn import PVCNN
+from models.sle_mlp import SLEMLP
 
 model_factory = {
-    'pvcnn': PVCNN,
+    'slemlp': SLEMLP,
 }
-epochs = {'pvcnn': 250}
+epochs = {'slemlp': 100}
 
 
 def parse_args():
