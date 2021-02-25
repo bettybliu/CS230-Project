@@ -1,8 +1,4 @@
-import pandas as pd
 import anndata as ad
-import matplotlib.pyplot as plt
-import numpy as np
-import os
 import torch
 import warnings
 from torch.utils.data import Dataset
@@ -31,6 +27,12 @@ class SLEDataLoader(Dataset):
         return self.nsample
 
     def _get_item(self, index):
+        """
+        Return a single sample and its class label
+
+        :param index: numerical sample index
+        :return: a tuple of sample data and sample label
+        """
         point_set = self.vals[index, :, :]
         cls = self.labels[index]
         return point_set, cls
@@ -39,6 +41,12 @@ class SLEDataLoader(Dataset):
         return self._get_item(index)
 
 def build_dataloader(split="train"):
+    """
+    Feed data into the pytorch framework
+
+    :param split: "train", "dev" or "test"
+    :return: pytorch dataloader object
+    """
     dataset = SLEDataLoader(split)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset), shuffle=(split == 'train'),
                                              num_workers=0, pin_memory=True)
@@ -47,10 +55,11 @@ def build_dataloader(split="train"):
 
 if __name__ == '__main__':
     from tqdm import tqdm
-    data = SLEDataLoader('train')
+    data = SLEDataLoader('dev')
     DataLoader = torch.utils.data.DataLoader(data, batch_size=len(data), shuffle=True, num_workers=0, pin_memory=True)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     for epoch in range(3):
         for point, label in tqdm(DataLoader):
+            # point = point.numpy()
             point = point.to(device)
             label = label.to(device)

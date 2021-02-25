@@ -91,8 +91,8 @@ class SLEMLP(pl.LightningModule):
         train_acc = self.acc(y_hat, label)
         train_auc = self.auroc(prob, label)
 
-        tensorboard_logs = {'train_loss': loss, 'train_acc': train_acc, 'train_auc': train_auc}
-        return {'log': tensorboard_logs, 'train_loss': loss, 'train_auc': train_auc}
+        tensorboard_logs = {'loss': loss, 'train_acc': train_acc, 'train_auc': train_auc}
+        return {'log': tensorboard_logs, 'loss': loss, 'train_auc': train_auc}
 
     def validation_step(self, batch, batch_idx):
         """
@@ -163,7 +163,7 @@ class SLEMLP(pl.LightningModule):
 
         :param batch: current batch data
         :param device: CPU or GPU device
-        :return:
+        :return: reference to batch data on device
         """
         points, target = batch
         target = target.long()

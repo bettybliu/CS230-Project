@@ -21,7 +21,7 @@ def main():
     args = parse_args()
     model = model_factory[args.model]()
     max_epochs = epochs[args.model]
-    trainer = pl.Trainer(max_epochs=max_epochs, gpus=1, default_root_dir='./runs/%s' % args.model)
+    trainer = pl.Trainer(max_epochs=max_epochs, gpus=0, default_root_dir='./runs/%s' % args.model)
     trainer.fit(model)
 
 

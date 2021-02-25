@@ -49,9 +49,9 @@ def data_clean():
     sample_names = meta.copy().index.tolist()
     np.random.shuffle(sample_names)
     meta['split'] = ''
-    meta.loc[sample_names[0:140], 'split'] = 'train'
-    meta.loc[sample_names[140:160], 'split'] = 'dev'
-    meta.loc[sample_names[160:], 'split'] = 'test'
+    meta.loc[sample_names[0:144], 'split'] = 'train'
+    meta.loc[sample_names[144:174], 'split'] = 'dev'
+    meta.loc[sample_names[174:], 'split'] = 'test'
 
     # write to disk
     adata.obs = meta
