@@ -1,5 +1,6 @@
 """
 Multilayer Perceptron Model
+binary classification of active vs inactive SLE
 """
 import torch
 import torchvision
@@ -14,40 +15,7 @@ import io
 from PIL import Image
 from dataloader import *
 from pytorch_lightning.metrics.classification import AUROC
-
-
-def build_mlp_block(in_c, out_c, kernel_size=1):
-    """
-    Build a single MLP block with three layers:
-        convolution, batchnorm and relu activation
-
-    :param in_c: number of input channels
-    :param out_c: number of output channels
-    :param kernel_size: convolution filter size f
-    :return: the MLP block model
-    """
-    layers = [
-        nn.Conv1d(in_c, out_c, kernel_size=kernel_size),
-        nn.BatchNorm1d(out_c),
-        nn.LeakyReLU(0.1)
-    ]
-    model = nn.Sequential(*layers)
-    init_weights(model)
-    return model
-
-
-def init_weights(model):
-    """
-    Initialize weights using He initialization.
-    Initialize all biases to zero.
-
-    :param model: the model block to be initialized
-    :return: None
-    """
-    for m in model.modules():
-        if isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear):
-            nn.init.kaiming_normal_(m.weight)
-            nn.init.zeros_(m.bias)
+from models.sle_mlp import init_weights, SLEMLP
 
 
 def plot_conf_matrix(model, split="val"):
@@ -62,8 +30,8 @@ def plot_conf_matrix(model, split="val"):
     tb = model.logger.experiment
     cm = model.train_confusion if (split == 'train') else model.val_confusion
     cm = cm.compute().detach().cpu().numpy().astype(np.int)
-    df_cm = pd.DataFrame(cm, index=['inactiveSLE', 'activeSLE', 'healthy'],
-                         columns=['inactiveSLE', 'activeSLE', 'healthy'])
+    df_cm = pd.DataFrame(cm, index=['inactiveSLE', 'activeSLE'],
+                         columns=['inactiveSLE', 'activeSLE'])
 
     # plot confusion matrix
     plt.figure()
@@ -78,43 +46,26 @@ def plot_conf_matrix(model, split="val"):
 
     # clear confusion matrix
     if split == 'train':
-        model.train_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
+        model.train_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=2)
     else:
-        model.val_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
+        model.val_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=2)
 
 
-class SLEMLP(pl.LightningModule):
+class SLEMLP_BINARY(SLEMLP):
     """
     MLP model for predicting SLE disease activity
     """
 
     def __init__(self):
         super().__init__()
-        self.proj_layer = build_mlp_block(in_c=8, out_c=1)
-        self.mlp1 = build_mlp_block(in_c=18190, out_c=512)
-        self.mlp2 = build_mlp_block(in_c=512, out_c=128)
-        self.out_layer = nn.Conv1d(in_channels=128, out_channels=3, kernel_size=1)
-        self.dropout_layer = nn.Dropout(p=0.2)
+        self.out_layer = nn.Conv1d(in_channels=128, out_channels=2, kernel_size=1)
         init_weights(self.out_layer)
 
         # initialize metrics
         self.acc = pl.metrics.Accuracy()
-        self.auroc = AUROC(num_classes=3, pos_label=1)
-        self.val_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
-        self.train_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
-
-    def forward(self, x):
-        """
-        Forward propagation step
-
-        :param x: input data of shape: batchsize x 8 x 18190
-        :return: logits: batchsize x 3
-        """
-        x = self.proj_layer(x)
-        x = x.transpose(1, 2).contiguous()  # batchsize x 18190 x 1
-        x = self.mlp2(self.dropout_layer(self.mlp1(x)))
-        logits = self.out_layer(x).squeeze(dim=2)
-        return logits
+        self.auroc = AUROC(num_classes=2, pos_label=1)
+        self.val_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=2)
+        self.train_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=2)
 
     def training_step(self, batch, batch_idx):
         """
@@ -128,7 +79,7 @@ class SLEMLP(pl.LightningModule):
         logits = self(x)  # forward step
 
         # calculate loss and use max logit as predicted value
-        weights = torch.tensor([0.25, 0.5, 0.25], dtype=torch.float)  # increase loss weight of the active SLE class
+        weights = torch.tensor([0.3, 0.7], dtype=torch.float)  # increase loss weight of the active SLE class
         loss = F.cross_entropy(logits, label, weights)
         prob = F.softmax(logits, dim=1)
         _, y_hat = torch.max(logits, dim=1)
@@ -162,29 +113,6 @@ class SLEMLP(pl.LightningModule):
         self.log('avg_train_auc', avg_train_auc)
         return
 
-    def validation_step(self, batch, batch_idx):
-        """
-        A single validation step on the given batch
-
-        :param batch: current sample batch
-        :param batch_idx: current batch id
-        :return: a dictionary of validation logs, e.g. loss, accuracy
-        """
-        x, label = batch
-        logits = self(x)
-
-        # calculate loss and use max logit as predicted value
-        loss = F.cross_entropy(logits, label)
-        prob = F.softmax(logits, dim=1)
-        _, y_hat = torch.max(logits, dim=1)
-
-        # calculate metrics
-        test_acc = self.acc(y_hat, label)
-        test_auc = self.auroc(prob, label)
-        self.val_confusion.update(y_hat, label)
-
-        return {'val_loss': loss, 'val_acc': test_acc, 'val_auc': test_auc}
-
     def validation_epoch_end(self, outputs):
         """
         Calculate average loss, accuracy and AUC after one epoch of validation
@@ -203,24 +131,13 @@ class SLEMLP(pl.LightningModule):
         logs = {'avg_val_loss': avg_loss, 'avg_val_acc': avg_acc, 'avg_val_auc': avg_auc}
         return {'log': logs, 'val_loss': avg_loss, 'progress_bar': logs}
 
-    def configure_optimizers(self):
-        """
-        Setup Adam optimizer and learning rate decay
-
-        :return: optimizer function and the learning rate scheduler function
-        """
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3, weight_decay=1e-4)
-        lr_func = lambda epoch: 2 ** (-1 * (epoch // 40))
-        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_func)
-        return [optimizer], [scheduler]
-
     def train_dataloader(self):
         """
         Load training data
 
         :return: training data object
         """
-        return build_dataloader(split='train')
+        return build_dataloader(split='train', binary=True)
 
     def val_dataloader(self):
         """
@@ -228,18 +145,26 @@ class SLEMLP(pl.LightningModule):
 
         :return: validation data object
         """
-        return build_dataloader(split='dev')
+        return build_dataloader(split='dev', binary=True)
 
-    def transfer_batch_to_device(self, batch, device=None):
+
+class SLEMLP_KIDNEY_BINARY(SLEMLP_BINARY):
+    """
+    MLP model for predicting SLE kidney symptom
+    """
+
+    def train_dataloader(self):
         """
-        Interface with GPU/CPU
+        Load training data
 
-        :param batch: current batch data
-        :param device: CPU or GPU device
-        :return: reference to batch data on device
+        :return: training data object
         """
-        points, target = batch
-        target = target.long()
+        return build_dataloader(split='train', binary=True, kidney=True)
 
-        batch = (points, target)
-        return super().transfer_batch_to_device(batch, device)
+    def val_dataloader(self):
+        """
+        Load validation data
+
+        :return: validation data object
+        """
+        return build_dataloader(split='dev', binary=True, kidney=True)

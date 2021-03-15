@@ -5,17 +5,20 @@ import anndata as ad
 
 #------------------visualize clinical data------------------#
 def cl_vis():
+    label = 'sleflare'
+    classes = ['SLE inactive', 'SLE active', 'Healthy']
     cl = pd.read_csv('data/clinical_data_clean.csv')
     f = plt.figure(dpi=150, figsize=(6,4))
-    counts = cl['sleflare'].value_counts().values
+    counts = cl[label].value_counts().values
 
     plt.bar(np.arange(3), [76, 41, 87])
-    plt.xticks(np.arange(3), ['SLE inactive', 'SLE active', 'Healthy'])
+    plt.xticks(np.arange(3), classes)
     plt.ylabel('number of samples')
-    f.savefig('cl_sleflare.png')
+    f.savefig(f'cl_{label}.png')
 
 #------------------clean up expression data------------------#
-def data_clean():
+def data_clean(label='sleflare', outdir='data/normct_all.h5ad'):
+
     # concatenating expression from different cell types
     #   Progen, MK, pDC were excluded because of diff # samples
     ct_list = ['B', 'cDC', 'cM', 'ncM', 'NK', 'ProlifT', 'Tc', 'Th']
@@ -33,12 +36,12 @@ def data_clean():
     assert adata.shape == (206, 18190 * len(ct_list))
 
     # data cleanup
-    #   change sleflare label for healthy patients from nan to 2
+    #   change label for healthy patients from nan to 2
     ind_healthy = np.where(meta['disease_cov'] == 'healthy')[0]
-    meta.loc[meta.index[ind_healthy], 'sleflare'] = 2
+    meta.loc[meta.index[ind_healthy], label] = 2
 
-    #   remove sle samples without flare information
-    mask_sle_noflareinfo = (np.isnan(meta['sleflare'])) & (meta['disease_cov']=='sle')
+    #   remove sle samples without label information
+    mask_sle_noflareinfo = (np.isnan(meta[label])) & (meta['disease_cov']=='sle')
     meta = meta[~mask_sle_noflareinfo]
     adata = adata[~mask_sle_noflareinfo]
     print(meta.shape)
@@ -55,7 +58,9 @@ def data_clean():
 
     # write to disk
     adata.obs = meta
-    adata.write_h5ad(filename='data/normct_all.h5ad')
+    adata.write_h5ad(filename=outdir)
 
 if __name__ == "__main__":
-    data_clean()
+    label = 'kidney'
+    outdir = 'data/normct_all_kidney.h5ad'
+    data_clean(label, outdir)
