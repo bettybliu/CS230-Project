@@ -60,6 +60,22 @@ def data_clean(label='sleflare', outdir='data/normct_all.h5ad'):
     adata.obs = meta
     adata.write_h5ad(filename=outdir)
 
+#--------------plot conv1d layer weights---------#
+def plot_conv1d_wts():
+    ct_list = ['B', 'cDC', 'cM', 'ncM', 'NK', 'ProlifT', 'Tc', 'Th']
+    weights = [-0.6229, 0.6325, 0.1358, 0.3103, -0.6641, 0.5187, 0.1810, 0.0885]
+
+    f, ax = plt.subplots()
+    plt.style.use('seaborn')
+    ax.barh(np.arange(len(ct_list)), weights)
+    ax.set_yticks(np.arange(len(ct_list)))
+    ax.set_yticklabels(ct_list)
+    ax.set_ylim((-0.5, 7.5))
+    ax.set_ylabel('cell type')
+    ax.set_xlabel('projection layer weight')
+    ax.vlines(0, -0.5, 7.5, colors='k')
+    plt.show()
+
 if __name__ == "__main__":
     label = 'kidney'
     outdir = 'data/normct_all_kidney.h5ad'

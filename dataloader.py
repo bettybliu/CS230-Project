@@ -53,7 +53,6 @@ def build_dataloader(split="train", binary=False, kidney=False):
     :return: pytorch dataloader object
     """
     dataset = SLEDataLoader(split, binary, kidney)
-    # bs = len(dataset) if (split=="dev") else 32
     bs = len(dataset)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=bs, shuffle=(split == 'train'),
                                              num_workers=0, pin_memory=True)

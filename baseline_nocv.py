@@ -18,7 +18,7 @@ from sklearn.linear_model import LogisticRegression
 
 model_factory = {"knn": KNeighborsClassifier(n_neighbors=7), # k=5% training set size (n=144)
         "elasticnet": LogisticRegression(penalty='elasticnet', solver='saga', l1_ratio=0.9), # generate sparse solutions
-        "randomforest": RandomForestClassifier(n_estimators=500, random_state=1)}
+        "randomforest": RandomForestClassifier(n_estimators=10, random_state=4)}
 
 
 def parse_args():
@@ -35,7 +35,7 @@ def load_data():
     """
     adata = ad.read_h5ad('data/normct_all.h5ad')
     train = adata[adata.obs['split']=='train']
-    test = adata[adata.obs['split']=='dev']
+    test = adata[adata.obs['split']=='test']
     return train.X, train.obs['sleflare'].to_numpy(), test.X, test.obs['sleflare'].to_numpy()
 
 def run(model):

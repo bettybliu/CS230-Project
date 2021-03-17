@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import io
 from PIL import Image
 from dataloader import *
-from pytorch_lightning.metrics.classification import AUROC
+from pytorch_lightning.metrics.classification import AUROC, ConfusionMatrix, ROC
 
 
 def build_mlp_block(in_c, out_c, kernel_size=1):
@@ -78,30 +78,78 @@ def plot_conf_matrix(model, split="val"):
 
     # clear confusion matrix
     if split == 'train':
-        model.train_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
+        model.train_confusion = ConfusionMatrix(num_classes=3)
     else:
-        model.val_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
+        model.val_confusion = ConfusionMatrix(num_classes=3)
 
+def plot_roc(model, split="val", auc=0):
+    """
+    Add ROC curve to tensorboard
+
+    :param model: the model object
+    :param split: string, "train" or "val"
+    :param auc: calculated AUROC for target class
+    :return: None
+    """
+    tb = model.logger.experiment
+    roc = model.train_roc if (split == 'train') else model.val_roc
+    fpr, tpr, threshold = [[t.detach().cpu().numpy().astype(np.float) for t in ls] for ls in roc.compute()]
+
+    # plot ROC curve
+    fig, ax1 = plt.subplots()
+    cls = 1 # plot roc for class 1
+    ax1.plot(fpr[cls], tpr[cls], label=f'AUC = {auc:.2f}',
+             lw=2)
+
+    # plot random chance line
+    ax1.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
+             label='Chance', alpha=.8)
+    ax1.set(xlim=[-0.05, 1.05], ylim=[-0.05, 1.05],
+            xlabel=f'False Positive Rate (Positive Label {cls})',
+            ylabel=f'True Positive Rate (Positive Label {cls})',
+            title="Receiver operating characteristic")
+    ax1.legend(loc='lower right')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='jpeg')
+    buf.seek(0)
+    im = Image.open(buf)
+    im = torchvision.transforms.ToTensor()(im)
+    tb.add_image(f"{split}_ROC", im, global_step=model.current_epoch)
+
+    # clear roc
+    if split == 'train':
+        model.train_roc = ROC(num_classes=3)
+    else:
+        model.val_roc = ROC(num_classes=3)
 
 class SLEMLP(pl.LightningModule):
     """
     MLP model for predicting SLE disease activity
     """
 
-    def __init__(self):
+    def __init__(self, hparams):
+        """
+        Initialize model attributes
+
+        :param hparams: hyperparameters dictionary
+        """
         super().__init__()
+        self.hparams = hparams
         self.proj_layer = build_mlp_block(in_c=8, out_c=1)
         self.mlp1 = build_mlp_block(in_c=18190, out_c=512)
         self.mlp2 = build_mlp_block(in_c=512, out_c=128)
         self.out_layer = nn.Conv1d(in_channels=128, out_channels=3, kernel_size=1)
-        self.dropout_layer = nn.Dropout(p=0.2)
+        self.dropout_layer = nn.Dropout(p=hparams['dropout_prob'])
         init_weights(self.out_layer)
 
         # initialize metrics
         self.acc = pl.metrics.Accuracy()
         self.auroc = AUROC(num_classes=3, pos_label=1)
-        self.val_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
-        self.train_confusion = pl.metrics.classification.ConfusionMatrix(num_classes=3)
+        self.val_confusion = ConfusionMatrix(num_classes=3)
+        self.train_confusion = ConfusionMatrix(num_classes=3)
+        self.train_roc = ROC(num_classes=3)
+        self.val_roc = ROC(num_classes=3)
 
     def forward(self, x):
         """
@@ -128,7 +176,8 @@ class SLEMLP(pl.LightningModule):
         logits = self(x)  # forward step
 
         # calculate loss and use max logit as predicted value
-        weights = torch.tensor([0.25, 0.5, 0.25], dtype=torch.float)  # increase loss weight of the active SLE class
+        #   increase loss weight of the active SLE class
+        weights = torch.tensor(self.hparams['loss_cls_weights'], dtype=torch.float)
         loss = F.cross_entropy(logits, label, weights)
         prob = F.softmax(logits, dim=1)
         _, y_hat = torch.max(logits, dim=1)
@@ -137,6 +186,7 @@ class SLEMLP(pl.LightningModule):
         train_acc = self.acc(y_hat, label)
         train_auc = self.auroc(prob, label)
         self.train_confusion.update(y_hat, label)
+        self.train_roc.update(prob, label)
 
         self.log('loss', loss)
         return {'loss': loss, 'train_auc': train_auc, 'train_acc': train_acc}
@@ -155,6 +205,9 @@ class SLEMLP(pl.LightningModule):
 
         # plot confusion matrix
         plot_conf_matrix(self, split='train')
+
+        # plot roc curve
+        plot_roc(self, split='train', auc=avg_train_auc)
 
         # manual log since training_epoch_end does not allow return value
         self.log('avg_train_loss', avg_train_loss)
@@ -182,6 +235,7 @@ class SLEMLP(pl.LightningModule):
         test_acc = self.acc(y_hat, label)
         test_auc = self.auroc(prob, label)
         self.val_confusion.update(y_hat, label)
+        self.val_roc.update(prob, label)
 
         return {'val_loss': loss, 'val_acc': test_acc, 'val_auc': test_auc}
 
@@ -200,8 +254,17 @@ class SLEMLP(pl.LightningModule):
         # calculate confusion matrix
         plot_conf_matrix(self)
 
+        # plot roc curve
+        plot_roc(self, auc=avg_auc)
+
         logs = {'avg_val_loss': avg_loss, 'avg_val_acc': avg_acc, 'avg_val_auc': avg_auc}
         return {'log': logs, 'val_loss': avg_loss, 'progress_bar': logs}
+
+    def test_step(self, *args, **kwargs):
+        return self.validation_step(*args, **kwargs)
+
+    def test_epoch_end(self, *args, **kwargs):
+        return self.validation_epoch_end(*args, **kwargs)
 
     def configure_optimizers(self):
         """
@@ -209,8 +272,9 @@ class SLEMLP(pl.LightningModule):
 
         :return: optimizer function and the learning rate scheduler function
         """
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3, weight_decay=1e-4)
-        lr_func = lambda epoch: 2 ** (-1 * (epoch // 40))
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams['lr'],
+                                     weight_decay=self.hparams['l2_strength'])
+        lr_func = lambda epoch: 2 ** (-1 * (epoch // self.hparams['lr_half_time']))
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_func)
         return [optimizer], [scheduler]
 
@@ -229,6 +293,14 @@ class SLEMLP(pl.LightningModule):
         :return: validation data object
         """
         return build_dataloader(split='dev')
+
+    def test_dataloader(self):
+        """
+        Load test data
+
+        :return: test data object
+        """
+        return build_dataloader(split='test')
 
     def transfer_batch_to_device(self, batch, device=None):
         """
